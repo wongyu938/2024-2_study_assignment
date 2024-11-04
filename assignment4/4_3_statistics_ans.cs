@@ -130,10 +130,10 @@ Science: (95, 76)
 English: (92, 78)
 
 Students rank by total scores:
-Alice: 2nd
-Bob: 5th
-Charlie: 1st
-David: 4th
+Alice: 4th
+Bob: 1st
+Charlie: 5th
+David: 2nd
 Eve: 3rd
 
 */
