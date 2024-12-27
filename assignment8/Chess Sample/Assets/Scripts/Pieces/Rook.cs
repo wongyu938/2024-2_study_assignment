@@ -8,7 +8,7 @@ public class Rook : Piece
     public override MoveInfo[] GetMoves()
     {
         // --- TODO ---
-            List<MoveInfo> moves = new List<MoveInfo>();
+        List<MoveInfo> moves = new List<MoveInfo>();
 
         for (int i = 1; i < Utils.FieldWidth; i++)
         {

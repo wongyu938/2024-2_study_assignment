@@ -8,7 +8,7 @@ public class Knight : Piece
     public override MoveInfo[] GetMoves()
     {
         // --- TODO ---
-        return new MoveInfo[]
+         return new MoveInfo[]
         {
             new MoveInfo(2, 1, 1),   // 오른쪽 위
             new MoveInfo(2, -1, 1),  // 오른쪽 아래
