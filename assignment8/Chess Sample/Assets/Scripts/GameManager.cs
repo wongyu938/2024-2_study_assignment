@@ -35,7 +35,19 @@ public class GameManager : MonoBehaviour
     {
         // 8x8로 타일들을 배치
         // --- TODO ---
-        
+        for (int x = 0; x < Utils.FieldWidth; x++)
+        {
+            for (int y = 0; y < Utils.FieldHeight; y++)
+            {
+                GameObject tile = Instantiate(TilePrefab, new Vector3(x * Utils.TileSize, y * Utils.TileSize, 0), Quaternion.identity);
+                tile.transform.SetParent(TileParent);
+                Tiles[x, y] = tile.GetComponent<Tile>();
+                Tiles[x, y].MyPos = (x, y);
+                Tiles[x, y].Set((x, y));
+            }
+        }
+
+        // 체스 말 배치
         // ------
 
         PlacePieces(1);
@@ -46,7 +58,24 @@ public class GameManager : MonoBehaviour
     {
         // 체스 말들을 배치
         // --- TODO ---
-        
+        int pawnRow = direction == 1 ? 1 : 6;
+        int mainRow = direction == 1 ? 0 : 7;
+
+        // Pawn 배치
+        for (int x = 0; x < Utils.FieldWidth; x++)
+        {
+            PlacePiece(0, (x, pawnRow), direction); // 0: Pawn
+        }
+
+        // 주요 말 배치
+        PlacePiece(1, (0, mainRow), direction); // 1: Rook
+        PlacePiece(1, (7, mainRow), direction);
+        PlacePiece(2, (1, mainRow), direction); // 2: Knight
+        PlacePiece(2, (6, mainRow), direction);
+        PlacePiece(3, (2, mainRow), direction); // 3: Bishop
+        PlacePiece(3, (5, mainRow), direction);
+        PlacePiece(4, (3, mainRow), direction); // 4: Queen
+        PlacePiece(5, (4, mainRow), direction); // 5: King (한 번만 호출)
         // ------
     }
 
@@ -54,7 +83,21 @@ public class GameManager : MonoBehaviour
     {
         // 체스 말 하나를 배치 후 initialize
         // --- TODO ---
-        
+        Vector3 realPos = Utils.ToRealPos(pos);
+        realPos -= new Vector3(
+            Utils.FieldWidth * Utils.TileSize / 2f - Utils.TileSize / 2f,
+            Utils.FieldHeight * Utils.TileSize / 2f - Utils.TileSize / 2f,
+            0
+        );
+
+        GameObject pieceObj = Instantiate(PiecePrefabs[pieceType], PieceParent);
+        pieceObj.transform.position = new Vector3(realPos.x, realPos.y, 1); // 타일 중심에 위치
+
+        Piece piece = pieceObj.GetComponent<Piece>();
+        piece.initialize(pos, direction);
+        Pieces[pos.Item1, pos.Item2] = piece;
+
+        return piece;
         // ------
     }
 
@@ -80,7 +123,22 @@ public class GameManager : MonoBehaviour
         
         // 체스 말을 이동하고, 만약 해당 자리에 상대 말이 있다면 삭제
         // --- TODO ---
-        
+        (int oldX, int oldY) = piece.MyPos;
+        Pieces[oldX, oldY] = null;
+
+        // 타겟 위치에 말이 있으면 제거
+        Piece targetPiece = Pieces[targetPos.Item1, targetPos.Item2];
+        if (targetPiece != null)
+        {
+            Destroy(targetPiece.gameObject);
+        }
+
+        // 말 이동
+        piece.MoveTo(targetPos);
+        Pieces[targetPos.Item1, targetPos.Item2] = piece;
+
+        // 턴 변경
+        ChangeTurn();
         // ------
     }
 
@@ -88,7 +146,8 @@ public class GameManager : MonoBehaviour
     {
         // 턴을 변경하고, UI에 표시
         // --- TODO ---
-        
+        CurrentTurn *= -1; // 턴 전환
+        uiManager.UpdateTurn(CurrentTurn); // UI 업데이트
         // ------
     }
 }
