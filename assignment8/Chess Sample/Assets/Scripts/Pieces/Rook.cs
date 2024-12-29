@@ -8,17 +8,14 @@ public class Rook : Piece
     public override MoveInfo[] GetMoves()
     {
         // --- TODO ---
-        List<MoveInfo> moves = new List<MoveInfo>();
-
-        for (int i = 1; i < Utils.FieldWidth; i++)
+        return new MoveInfo[] 
         {
-            moves.Add(new MoveInfo(i, 0, i));   // 오른쪽
-            moves.Add(new MoveInfo(-i, 0, i));  // 왼쪽
-            moves.Add(new MoveInfo(0, i, i));   // 위
-            moves.Add(new MoveInfo(0, -i, i));  // 아래
-        }
-
-        return moves.ToArray();
+            new MoveInfo(1, 0, 7),  // 오른쪽으로 7칸
+            new MoveInfo(-1, 0, 7), // 왼쪽으로 7칸
+            new MoveInfo(0, 1, 7),  // 위쪽으로 7칸
+            new MoveInfo(0, -1, 7)  // 아래쪽으로 7칸
+        };
         // ------
+        
     }
 }

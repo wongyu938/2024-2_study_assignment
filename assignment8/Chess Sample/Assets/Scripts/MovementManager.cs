@@ -22,48 +22,35 @@ public class MovementManager : MonoBehaviour
         // 보드에 있는지, 다른 piece에 의해 막히는지 등을 체크
         // 폰에 대한 예외 처리를 적용
         // --- TODO ---
-        int dirX = moveInfo.dirX;
-        int dirY = moveInfo.dirY;
-        int distance = moveInfo.distance;
+        int currentX = piece.MyPos.Item1;
+        int currentY = piece.MyPos.Item2;
+        int dirX = moveInfo.dirX; 
+        int dirY = moveInfo.dirY; 
 
-        int startX = piece.MyPos.Item1;
-        int startY = piece.MyPos.Item2;
-
-        for (int step = 1; step <= distance; step++)
+        for (int step = 1; step <= moveInfo.distance; step++)
         {
-            int x = startX + dirX * step;
-            int y = startY + dirY * step;
+            int newX = currentX + dirX * step;
+            int newY = currentY + dirY * step;
 
-            if (!Utils.IsInBoard((x, y))) return false; // 보드 범위를 벗어나면 이동 불가
+            if (!Utils.IsInBoard((newX, newY))) return false;
 
-            var blockingPiece = gameManager.Pieces[x, y];
-
-            // 폰 이동 시 특수 규칙 처리
-            if (piece is Pawn pawn)
+            var targetPiece = gameManager.Pieces[newX, newY];
+            if ((newX, newY) == targetPos)
             {
-                if (dirX != 0) // 대각선 이동 (공격)
+                if (piece is Pawn)
                 {
-                    if (blockingPiece == null || blockingPiece.PlayerDirection == piece.PlayerDirection)
-                        return false; // 적 말이 없거나 아군 말이 있으면 대각선 이동 불가
+                    // 폰의 특별한 이동 규칙 처리
+                    if (targetPiece == null && dirX == 0) return true; // 직진
+                    if (targetPiece != null && dirX != 0) return true; // 대각선 공격
+                    return false;
                 }
-                else // 직진 이동
-                {
-                    if (blockingPiece != null) return false; // 직진 경로에 다른 말이 있으면 이동 불가
-                }
+                return targetPiece == null || targetPiece.PlayerDirection != piece.PlayerDirection;
             }
-            else
-            {
-                if (blockingPiece != null)
-                {
-                    if (blockingPiece.PlayerDirection == piece.PlayerDirection)
-                        return false; // 아군 말이 있으면 이동 불가
-                    if (step == distance) return true; // 적 말이 있으면 마지막 위치에서만 이동 가능
-                    return false; // 중간에 적이 있으면 이동 불가
-                }
-            }
+
+            if (targetPiece != null) break; // 다른 말로 막히면 그 방향은 끝
         }
 
-        return true; // 모든 조건 통과 시 이동 가능
+        return false;
         // ------
     }
 
@@ -105,7 +92,7 @@ public class MovementManager : MonoBehaviour
     }
 
     // 체크인지를 확인
-    private bool IsInCheck(int playerDirection)
+    public bool IsInCheck(int playerDirection)
     {
         (int, int) kingPos = (-1, -1); // 왕의 위치
         for (int x = 0; x < Utils.FieldWidth; x++)
@@ -125,20 +112,23 @@ public class MovementManager : MonoBehaviour
         // 왕이 지금 체크 상태인지를 리턴
         // gameManager.Pieces에서 Piece들을 참조하여 움직임을 확인
         // --- TODO ---
-        for (int x = 0; x < Utils.FieldWidth; x++)
+    if (kingPos == (-1, -1)) return false;
+
+        bool isCheck = false;
+
+        foreach (var piece in gameManager.Pieces)
+        {
+            if (piece != null && piece.PlayerDirection != playerDirection)
             {
-                for (int y = 0; y < Utils.FieldHeight; y++)
+                if (IsValidMoveWithoutCheck(piece, kingPos))
                 {
-                    var enemyPiece = gameManager.Pieces[x, y];
-                    if (enemyPiece != null && enemyPiece.PlayerDirection != playerDirection)
-                    {
-                        if (IsValidMoveWithoutCheck(enemyPiece, (kingPos.Item1, kingPos.Item2)))
-                            return true; // 왕이 공격받으면 체크 상태
-                    }
+                    isCheck = true;
+                    break;
                 }
             }
+        }
 
-        return false; // 체크 아님
+        return isCheck;
         // ------
     }
 
@@ -151,35 +141,17 @@ public class MovementManager : MonoBehaviour
         // effectPrefab을 effectParent의 자식으로 생성하고 위치를 적절히 설정
         // currentEffects에 effectPrefab을 추가
         // --- TODO ---
-        foreach (var moveInfo in piece.GetMoves())
+        for (int x = 0; x < Utils.FieldWidth; x++)
         {
-            int dirX = moveInfo.dirX;
-            int dirY = moveInfo.dirY;
-            int distance = moveInfo.distance;
-
-            for (int step = 1; step <= distance; step++)
+            for (int y = 0; y < Utils.FieldHeight; y++)
             {
-                int x = piece.MyPos.Item1 + dirX * step;
-                int y = piece.MyPos.Item2 + dirY * step;
-
-                if (!Utils.IsInBoard((x, y))) break;
-
-                var targetPiece = gameManager.Pieces[x, y];
-                if (targetPiece != null && targetPiece.PlayerDirection == piece.PlayerDirection)
-                    break; // 아군 말이 있는 경우 이동 중단
-
-                if (IsValidMove(piece, (x, y)))
+                var targetPos = (x, y);
+                if (IsValidMove(piece, targetPos))
                 {
-                    // 월드 좌표로 변환하여 효과의 위치를 설정
-                    Vector3 worldPosition = Utils.ToRealPos((x, y));
-
-                    // 효과를 생성하여 표시
-                    var effectObj = Instantiate(effectPrefab, effectParent);
-                    effectObj.transform.position = worldPosition;  // 수정된 부분
-                    currentEffects.Add(effectObj);
+                    GameObject effect = Instantiate(effectPrefab, effectParent);
+                    effect.transform.position = Utils.ToRealPos(targetPos);
+                    currentEffects.Add(effect);
                 }
-
-                if (targetPiece != null) break; // 적 말이 있으면 그 위치에서 멈춤
             }
         }
         // ------
